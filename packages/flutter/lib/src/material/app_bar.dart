@@ -820,13 +820,9 @@ class _AppBarState extends State<AppBar> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_scrollNotificationObserver != null) {
-      _scrollNotificationObserver!.removeListener(_handleScrollNotification);
-    }
-    _scrollNotificationObserver = ScrollNotificationObserver.of(context);
-    if (_scrollNotificationObserver != null) {
-      _scrollNotificationObserver!.addListener(_handleScrollNotification);
-    }
+    _scrollNotificationObserver?.removeListener(_handleScrollNotification);
+    _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+    _scrollNotificationObserver?.addListener(_handleScrollNotification);
   }
 
   @override
@@ -883,7 +879,13 @@ class _AppBarState extends State<AppBar> {
     final SystemUiOverlayStyle style = brightness == Brightness.dark
       ? SystemUiOverlayStyle.light
       : SystemUiOverlayStyle.dark;
-    return style.copyWith(statusBarColor: backgroundColor);
+    // For backward compatibility, create an overlay style without system navigation bar settings.
+    return SystemUiOverlayStyle(
+      statusBarColor: backgroundColor,
+      statusBarBrightness: style.statusBarBrightness,
+      statusBarIconBrightness: style.statusBarIconBrightness,
+      systemStatusBarContrastEnforced: style.systemStatusBarContrastEnforced,
+    );
   }
 
   @override
@@ -2095,7 +2097,7 @@ class _SliverAppBarState extends State<SliverAppBar> with TickerProviderStateMix
   Widget build(BuildContext context) {
     assert(!widget.primary || debugCheckHasMediaQuery(context));
     final double bottomHeight = widget.bottom?.preferredSize.height ?? 0.0;
-    final double topPadding = widget.primary ? MediaQuery.of(context).padding.top : 0.0;
+    final double topPadding = widget.primary ? MediaQuery.paddingOf(context).top : 0.0;
     final double collapsedHeight = (widget.pinned && widget.floating && widget.bottom != null)
       ? (widget.collapsedHeight ?? 0.0) + bottomHeight + topPadding
       : (widget.collapsedHeight ?? widget.toolbarHeight) + bottomHeight + topPadding;
@@ -2209,7 +2211,7 @@ class _ScrollUnderFlexibleSpace extends StatelessWidget {
   Widget build(BuildContext context) {
     late final ThemeData theme = Theme.of(context);
     final FlexibleSpaceBarSettings settings = context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>()!;
-    final double topPadding = primary ? MediaQuery.of(context).viewPadding.top : 0;
+    final double topPadding = primary ? MediaQuery.viewPaddingOf(context).top : 0;
     final double collapsedHeight = settings.minExtent - topPadding;
     final double scrollUnderHeight = settings.maxExtent - settings.minExtent;
     final _ScrollUnderFlexibleConfig config;
@@ -2344,7 +2346,7 @@ class _AppBarDefaultsM2 extends AppBarTheme {
 // Design token database by the script:
 //   dev/tools/gen_defaults/bin/gen_defaults.dart.
 
-// Token database version: v0_132
+// Token database version: v0_143
 
 class _AppBarDefaultsM3 extends AppBarTheme {
   _AppBarDefaultsM3(this.context)

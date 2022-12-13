@@ -672,7 +672,7 @@ void main() {
         home: MediaQuery(
           data: const MediaQueryData(
             // Representing a navigational notch at the bottom of the screen
-            padding: EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 40.0),
+            viewPadding: EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 40.0),
           ),
           child: Scaffold(
             body: SingleChildScrollView(
@@ -925,7 +925,7 @@ void main() {
               extendBody: extendBody,
               body: Builder(
                 builder: (BuildContext context) {
-                  mediaQueryBottom = MediaQuery.of(context).padding.bottom;
+                  mediaQueryBottom = MediaQuery.paddingOf(context).bottom;
                   return Container(key: bodyKey);
                 },
               ),
@@ -998,7 +998,7 @@ void main() {
                   ),
                   body: Builder(
                     builder: (BuildContext context) {
-                      mediaQueryTop = MediaQuery.of(context).padding.top;
+                      mediaQueryTop = MediaQuery.paddingOf(context).top;
                       return Container(key: bodyKey);
                     },
                   ),
@@ -1957,7 +1957,7 @@ void main() {
       MaterialApp(
         home: Builder(
           builder: (BuildContext context) {
-            screenWidth = MediaQuery.of(context).size.width;
+            screenWidth = MediaQuery.sizeOf(context).width;
             return Scaffold(
               endDrawer: const Drawer(
                 child: Text('Drawer'),

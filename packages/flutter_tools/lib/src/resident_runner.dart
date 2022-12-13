@@ -107,21 +107,26 @@ class FlutterDevice {
     // used to file a bug, but the compiler will still start up correctly.
     if (targetPlatform == TargetPlatform.web_javascript) {
       // TODO(zanderso): consistently provide these flags across platforms.
-      late HostArtifact platformDillArtifact;
+      late String platformDillName;
       final List<String> extraFrontEndOptions = List<String>.of(buildInfo.extraFrontEndOptions);
       if (buildInfo.nullSafetyMode == NullSafetyMode.unsound) {
-        platformDillArtifact = HostArtifact.webPlatformKernelDill;
+        platformDillName = 'ddc_outline.dill';
         if (!extraFrontEndOptions.contains('--no-sound-null-safety')) {
           extraFrontEndOptions.add('--no-sound-null-safety');
         }
       } else if (buildInfo.nullSafetyMode == NullSafetyMode.sound) {
-        platformDillArtifact = HostArtifact.webPlatformSoundKernelDill;
+        platformDillName = 'ddc_outline_sound.dill';
         if (!extraFrontEndOptions.contains('--sound-null-safety')) {
           extraFrontEndOptions.add('--sound-null-safety');
         }
       } else {
         assert(false);
       }
+
+      final String platformDillPath = globals.fs.path.join(
+        getWebPlatformBinariesDirectory(globals.artifacts!, buildInfo.webRenderer).path,
+        platformDillName
+      );
 
       generator = ResidentCompiler(
         globals.artifacts!.getHostArtifact(HostArtifact.flutterWebSdk).path,
@@ -139,9 +144,7 @@ class FlutterDevice {
         assumeInitializeFromDillUpToDate: buildInfo.assumeInitializeFromDillUpToDate,
         targetModel: TargetModel.dartdevc,
         extraFrontEndOptions: extraFrontEndOptions,
-        platformDill: globals.fs.file(globals.artifacts!
-          .getHostArtifact(platformDillArtifact))
-          .absolute.uri.toString(),
+        platformDill: globals.fs.file(platformDillPath).absolute.uri.toString(),
         dartDefines: buildInfo.dartDefines,
         librariesSpec: globals.fs.file(globals.artifacts!
           .getHostArtifact(HostArtifact.flutterWebLibrariesJson)).uri.toString(),
@@ -637,7 +640,7 @@ abstract class ResidentHandlers {
   ResidentDevtoolsHandler? get residentDevtoolsHandler;
 
   @protected
-  Logger? get logger;
+  Logger get logger;
 
   @protected
   FileSystem? get fileSystem;
@@ -666,7 +669,7 @@ abstract class ResidentHandlers {
         final String data = await device.vmService!.flutterDebugDumpApp(
           isolateId: view.uiIsolate!.id!,
         );
-        logger!.printStatus(data);
+        logger.printStatus(data);
       }
     }
     return true;
@@ -683,7 +686,7 @@ abstract class ResidentHandlers {
         final String data = await device.vmService!.flutterDebugDumpRenderTree(
           isolateId: view.uiIsolate!.id!,
         );
-        logger!.printStatus(data);
+        logger.printStatus(data);
       }
     }
     return true;
@@ -702,7 +705,7 @@ abstract class ResidentHandlers {
     }
     for (final FlutterDevice? device in flutterDevices) {
       if (device?.targetPlatform == TargetPlatform.web_javascript) {
-        logger!.printWarning('Unable to get jank metrics for web');
+        logger.printWarning('Unable to get jank metrics for web');
         continue;
       }
       final List<FlutterView> views = await device!.vmService!.getFlutterViews();
@@ -719,9 +722,9 @@ abstract class ResidentHandlers {
             'json',
           );
           tempFile.writeAsStringSync(jsonEncode(rasterData), flush: true);
-          logger!.printStatus('Wrote jank metrics to ${tempFile.absolute.path}');
+          logger.printStatus('Wrote jank metrics to ${tempFile.absolute.path}');
         } else {
-          logger!.printWarning('Unable to get jank metrics.');
+          logger.printWarning('Unable to get jank metrics.');
         }
       }
     }
@@ -739,7 +742,7 @@ abstract class ResidentHandlers {
         final String data = await device.vmService!.flutterDebugDumpLayerTree(
           isolateId: view.uiIsolate!.id!,
         );
-        logger!.printStatus(data);
+        logger.printStatus(data);
       }
     }
     return true;
@@ -758,7 +761,7 @@ abstract class ResidentHandlers {
         final String data = await device.vmService!.flutterDebugDumpSemanticsTreeInTraversalOrder(
           isolateId: view.uiIsolate!.id!,
         );
-        logger!.printStatus(data);
+        logger.printStatus(data);
       }
     }
     return true;
@@ -777,7 +780,7 @@ abstract class ResidentHandlers {
         final String data = await device.vmService!.flutterDebugDumpSemanticsTreeInInverseHitTestOrder(
           isolateId: view.uiIsolate!.id!,
         );
-        logger!.printStatus(data);
+        logger.printStatus(data);
       }
     }
     return true;
@@ -891,7 +894,7 @@ abstract class ResidentHandlers {
           brightness: next,
         );
       }
-      logger!.printStatus('Changed brightness to $next.');
+      logger.printStatus('Changed brightness to $next.');
     }
     return true;
   }
@@ -916,7 +919,7 @@ abstract class ResidentHandlers {
         );
       }
     }
-    logger!.printStatus('Switched operating system to $to');
+    logger.printStatus('Switched operating system to $to');
     return true;
   }
 
@@ -954,7 +957,7 @@ abstract class ResidentHandlers {
     if (!device.device!.supportsScreenshot && !supportsServiceProtocol) {
       return;
     }
-    final Status status = logger!.startProgress(
+    final Status status = logger.startProgress(
       'Taking screenshot for ${device.device!.name}...',
     );
     final File outputFile = getUniqueFile(
@@ -975,12 +978,12 @@ abstract class ResidentHandlers {
       }
       final int sizeKB = outputFile.lengthSync() ~/ 1024;
       status.stop();
-      logger!.printStatus(
+      logger.printStatus(
         'Screenshot written to ${fileSystem!.path.relative(outputFile.path)} (${sizeKB}kB).',
       );
     } on Exception catch (error) {
       status.cancel();
-      logger!.printError('Error taking screenshot: $error');
+      logger.printError('Error taking screenshot: $error');
     }
   }
 
@@ -1016,7 +1019,7 @@ abstract class ResidentHandlers {
         }
         return true;
       } on vm_service.RPCError catch (error) {
-        logger!.printError('Error communicating with Flutter on the device: $error');
+        logger.printError('Error communicating with Flutter on the device: $error');
         return false;
       }
     }
@@ -1088,7 +1091,7 @@ abstract class ResidentRunner extends ResidentHandlers {
   }
 
   @override
-  Logger? get logger => globals.logger;
+  Logger get logger => globals.logger;
 
   @override
   FileSystem get fileSystem => globals.fs;
